@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Phishing Detection</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --success-color: #1cc88a;
+            --warning-color: #f6c23e;
+            --danger-color: #e74a3b;
+            --sidebar-width: 250px;
+            --dark-bg: #1a1a1a;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fc;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, var(--primary-color) 0%, #224abe 100%);
+            color: white;
+            padding: 1.5rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 0.75rem 1rem;
+            border-radius: 0.35rem;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-link i {
+            margin-right: 0.5rem;
+            width: 1.25rem;
+            text-align: center;
+        }
+
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding: 2rem;
+        }
+
+        .card {
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            border: none;
+            border-radius: 0.35rem;
+            margin-bottom: 1.5rem;
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stats-card {
+            border-left: 4px solid var(--primary-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stats-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            transform: translate(30px, -30px);
+        }
+
+        .stats-card.safe {
+            border-left-color: var(--success-color);
+        }
+
+        .stats-card.suspicious {
+            border-left-color: var(--warning-color);
+        }
+
+        .stats-card.phishing {
+            border-left-color: var(--danger-color);
+        }
+
+        .verdict-badge {
+            font-size: 1.2rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.35rem;
+            display: inline-block;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+
+        .verdict-badge.safe {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .verdict-badge.suspicious {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .verdict-badge.phishing {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .finding-item {
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 0.35rem;
+            background-color: #f8f9fc;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .finding-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+
+        .finding-item.high {
+            border-left: 4px solid var(--danger-color);
+        }
+
+        .finding-item.medium {
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .finding-item.low {
+            border-left: 4px solid var(--success-color);
+        }
+
+        .tips-container {
+            background-color: #f8f9fc;
+            padding: 1rem;
+            border-radius: 0.35rem;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .loading i {
+            font-size: 2rem;
+            color: var(--primary-color);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .chart-container {
+            height: 300px;
+            margin-bottom: 1.5rem;
+        }
+
+        .email-preview {
+            background-color: #f8f9fc;
+            padding: 1rem;
+            border-radius: 0.35rem;
+            margin-bottom: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .email-preview pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin: 0;
+        }
+
+        .timeline {
+            position: relative;
+            padding: 1rem 0;
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-left: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 1px;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            left: -4px;
+            top: 0;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+        }
+
+        .timeline-item.safe::after {
+            background-color: var(--success-color);
+        }
+
+        .timeline-item.suspicious::after {
+            background-color: var(--warning-color);
+        }
+
+        .timeline-item.phishing::after {
+            background-color: var(--danger-color);
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-box input {
+            padding-left: 2.5rem;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+
+        .filter-buttons {
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-buttons .btn {
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: relative;
+                margin-bottom: 1rem;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+
+        .dark-mode {
+            background-color: var(--dark-bg);
+            color: #fff;
+        }
+
+        .dark-mode .card {
+            background-color: #2d2d2d;
+            color: #fff;
+        }
+
+        .dark-mode .finding-item {
+            background-color: #2d2d2d;
+        }
+
+        .dark-mode .tips-container {
+            background-color: #2d2d2d;
+        }
+
+        .dark-mode .email-preview {
+            background-color: #2d2d2d;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            z-index: 1000;
+        }
+
+        .analysis-options {
+            background-color: #f8f9fc;
+            padding: 1rem;
+            border-radius: 0.35rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .option-group {
+            margin-bottom: 1rem;
+        }
+
+        .option-group h6 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .threat-indicator {
+            height: 4px;
+            background-color: #e9ecef;
+            border-radius: 2px;
+            margin-bottom: 0.5rem;
+            overflow: hidden;
+        }
+
+        .threat-level {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .threat-level.low {
+            background-color: var(--success-color);
+        }
+
+        .threat-level.medium {
+            background-color: var(--warning-color);
+        }
+
+        .threat-level.high {
+            background-color: var(--danger-color);
+        }
+
+        .domain-info {
+            background-color: #f8f9fc;
+            padding: 1rem;
+            border-radius: 0.35rem;
+            margin-bottom: 1rem;
+        }
+
+        .domain-info h6 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .domain-status {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .domain-status i {
+            margin-right: 0.5rem;
+        }
+
+        .domain-status.safe i {
+            color: var(--success-color);
+        }
+
+        .domain-status.suspicious i {
+            color: var(--warning-color);
+        }
+
+        .domain-status.phishing i {
+            color: var(--danger-color);
+        }
+
+        .link-analysis {
+            margin-top: 1rem;
+        }
+
+        .link-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            border-radius: 0.35rem;
+            margin-bottom: 0.5rem;
+            background-color: #f8f9fc;
+        }
+
+        .link-item.safe {
+            border-left: 4px solid var(--success-color);
+        }
+
+        .link-item.suspicious {
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .link-item.phishing {
+            border-left: 4px solid var(--danger-color);
+        }
+
+        .link-item i {
+            margin-right: 0.5rem;
+        }
+
+        .link-item.safe i {
+            color: var(--success-color);
+        }
+
+        .link-item.suspicious i {
+            color: var(--warning-color);
+        }
+
+        .link-item.phishing i {
+            color: var(--danger-color);
+        }
+
+        .header-analysis {
+            margin-top: 1rem;
+        }
+
+        .header-item {
+            padding: 0.5rem;
+            border-radius: 0.35rem;
+            margin-bottom: 0.5rem;
+            background-color: #f8f9fc;
+        }
+
+        .header-item h6 {
+            margin-bottom: 0.25rem;
+        }
+
+        .header-item pre {
+            margin: 0;
+            font-size: 0.875rem;
+        }
+
+        .attachment-analysis {
+            margin-top: 1rem;
+        }
+
+        .attachment-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            border-radius: 0.35rem;
+            margin-bottom: 0.5rem;
+            background-color: #f8f9fc;
+        }
+
+        .attachment-item i {
+            margin-right: 0.5rem;
+            font-size: 1.25rem;
+        }
+
+        .attachment-item.safe i {
+            color: var(--success-color);
+        }
+
+        .attachment-item.suspicious i {
+            color: var(--warning-color);
+        }
+
+        .attachment-item.phishing i {
+            color: var(--danger-color);
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .quick-action-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.35rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-action-btn:hover {
+            background-color: #224abe;
+        }
+
+        .quick-action-btn i {
+            margin-right: 0.5rem;
+        }
+
+        .analysis-summary {
+            background-color: #f8f9fc;
+            padding: 1rem;
+            border-radius: 0.35rem;
+            margin-bottom: 1rem;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .summary-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .summary-label {
+            color: #6c757d;
+        }
+
+        .summary-value {
+            font-weight: 500;
+        }
+
+        .summary-value.safe {
+            color: var(--success-color);
+        }
+
+        .summary-value.suspicious {
+            color: var(--warning-color);
+        }
+
+        .summary-value.phishing {
+            color: var(--danger-color);
+        }
+
+        .risk-factors {
+            margin-top: 1rem;
+        }
+
+        .risk-factor {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            border-radius: 0.35rem;
+            margin-bottom: 0.5rem;
+            background-color: #f8f9fc;
+        }
+
+        .risk-factor i {
+            margin-right: 0.5rem;
+            font-size: 1.25rem;
+        }
+
+        .risk-factor.safe i {
+            color: var(--success-color);
+        }
+
+        .risk-factor.suspicious i {
+            color: var(--warning-color);
+        }
+
+        .risk-factor.phishing i {
+            color: var(--danger-color);
+        }
+
+        .risk-factor-content {
+            flex: 1;
+        }
+
+        .risk-factor-title {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .risk-factor-description {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+
+        .recommendations {
+            margin-top: 1rem;
+        }
+
+        .recommendation-item {
+            padding: 0.5rem;
+            border-radius: 0.35rem;
+            margin-bottom: 0.5rem;
+            background-color: #f8f9fc;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .recommendation-item h6 {
+            margin-bottom: 0.25rem;
+        }
+
+        .recommendation-item p {
+            margin: 0;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h4 class="mb-0">Phishing Detector</h4>
+            <small class="text-white-50">Email Security Analysis</small>
+        </div>
+        <nav class="mt-4">
+            <a href="#" class="nav-link active" data-tab="analyze">
+                <i class="fas fa-search"></i> Analyze Email
+            </a>
+            <a href="#" class="nav-link" data-tab="history">
+                <i class="fas fa-history"></i> Analysis History
+            </a>
+            <a href="#" class="nav-link" data-tab="stats">
+                <i class="fas fa-chart-bar"></i> Statistics
+            </a>
+            <a href="#" class="nav-link" data-tab="settings">
+                <i class="fas fa-cog"></i> Settings
+            </a>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <!-- Analyze Tab -->
+        <div class="tab-content" id="analyze-tab">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">Analyze Email</h2>
+                    
+                    <div class="quick-actions">
+                        <button class="quick-action-btn" id="analyzeGmail">
+                            <i class="fas fa-envelope"></i> Analyze Gmail
+                        </button>
+                        <button class="quick-action-btn" id="analyzeOutlook">
+                            <i class="fas fa-envelope"></i> Analyze Outlook
+                        </button>
+                        <button class="quick-action-btn" id="analyzeClipboard">
+                            <i class="fas fa-paste"></i> Analyze Clipboard
+                        </button>
+                    </div>
+                    
+                    <form id="analysisForm">
+                        <div class="mb-3">
+                            <label for="emailContent" class="form-label">Email Content</label>
+                            <textarea class="form-control" id="emailContent" rows="10" placeholder="Paste email content here..."></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="emailFile" class="form-label">Or Upload Email File</label>
+                            <input class="form-control" type="file" id="emailFile" accept=".eml,.txt">
+                        </div>
+
+                        <div class="analysis-options">
+                            <h5>Analysis Options</h5>
+                            
+                            <div class="option-group">
+                                <h6>Email Headers</h6>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="checkHeaders" checked>
+                                    <label class="form-check-label" for="checkHeaders">
+                                        Check Email Headers
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="checkSPF" checked>
+                                    <label class="form-check-label" for="checkSPF">
+                                        Check SPF Records
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="checkDKIM" checked>
+                                    <label class="form-check-label" for="checkDKIM">
+                                        Check DKIM Signatures
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="option-group">
+                                <h6>Content Analysis</h6>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="checkLinks" checked>
+                                    <label class="form-check-label" for="checkLinks">
+                                        Check Links and URLs
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="checkAttachments" checked>
+                                    <label class="form-check-label" for="checkAttachments">
+                                        Check Attachments
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="checkLanguage" checked>
+                                    <label class="form-check-label" for="checkLanguage">
+                                        Check Language Patterns
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="option-group">
+                                <h6>Advanced Analysis</h6>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="checkDomainAge" checked>
+                                    <label class="form-check-label" for="checkDomainAge">
+                                        Check Domain Age
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="checkSSL" checked>
+                                    <label class="form-check-label" for="checkSSL">
+                                        Check SSL Certificates
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="checkBlacklist" checked>
+                                    <label class="form-check-label" for="checkBlacklist">
+                                        Check Blacklists
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Analyze Email
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="loading">
+                        <i class="fas fa-spinner"></i>
+                        <p class="mt-2">Analyzing email...</p>
+                    </div>
+
+                    <div id="results" class="mt-4" style="display: none;">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Analysis Results</h5>
+                                
+                                <div class="analysis-summary">
+                                    <div class="summary-item">
+                                        <span class="summary-label">Overall Verdict</span>
+                                        <span class="summary-value verdict-badge"></span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">Threat Level</span>
+                                        <div class="threat-indicator">
+                                            <div class="threat-level"></div>
+                                        </div>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">Confidence Score</span>
+                                        <span class="summary-value score-progress"></span>
+                                    </div>
+                                </div>
+
+                                <div class="domain-info">
+                                    <h6>Domain Analysis</h6>
+                                    <div class="domain-status">
+                                        <i class="fas fa-check-circle"></i>
+                                        <span>Domain registered: <span id="domainAge">2 years</span></span>
+                                    </div>
+                                    <div class="domain-status">
+                                        <i class="fas fa-shield-alt"></i>
+                                        <span>SSL Certificate: <span id="sslStatus">Valid</span></span>
+                                    </div>
+                                    <div class="domain-status">
+                                        <i class="fas fa-globe"></i>
+                                        <span>Blacklist Status: <span id="blacklistStatus">Clean</span></span>
+                                    </div>
+                                </div>
+                                
+                                <div class="email-preview mb-3">
+                                    <h6>Email Preview</h6>
+                                    <pre id="emailPreview"></pre>
+                                </div>
+
+                                <div class="link-analysis">
+                                    <h6>Link Analysis</h6>
+                                    <div id="linkAnalysisResults"></div>
+                                </div>
+
+                                <div class="header-analysis">
+                                    <h6>Header Analysis</h6>
+                                    <div id="headerAnalysisResults"></div>
+                                </div>
+
+                                <div class="attachment-analysis">
+                                    <h6>Attachment Analysis</h6>
+                                    <div id="attachmentAnalysisResults"></div>
+                                </div>
+
+                                <div class="risk-factors">
+                                    <h6>Risk Factors</h6>
+                                    <div id="riskFactors"></div>
+                                </div>
+
+                                <div class="recommendations">
+                                    <h6>Recommendations</h6>
+                                    <div id="recommendations"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Tab -->
+        <div class="tab-content" id="history-tab" style="display: none;">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">Analysis History</h2>
+                    
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" class="form-control" id="historySearch" placeholder="Search history...">
+                    </div>
+                    
+                    <div class="filter-buttons">
+                        <button class="btn btn-outline-primary active" data-filter="all">All</button>
+                        <button class="btn btn-outline-success" data-filter="safe">Safe</button>
+                        <button class="btn btn-outline-warning" data-filter="suspicious">Suspicious</button>
+                        <button class="btn btn-outline-danger" data-filter="phishing">Phishing</button>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Verdict</th>
+                                    <th>Score</th>
+                                    <th>Findings</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTable">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Tab -->
+        <div class="tab-content" id="stats-tab" style="display: none;">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card stats-card safe">
+                        <div class="card-body">
+                            <h6 class="text-uppercase text-muted">Safe Emails</h6>
+                            <h2 class="mb-0" id="safeCount">0</h2>
+                            <div class="mt-2">
+                                <span class="text-success">
+                                    <i class="fas fa-arrow-up"></i> 12%
+                                </span>
+                                <span class="text-muted">from last month</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card stats-card suspicious">
+                        <div class="card-body">
+                            <h6 class="text-uppercase text-muted">Suspicious Emails</h6>
+                            <h2 class="mb-0" id="suspiciousCount">0</h2>
+                            <div class="mt-2">
+                                <span class="text-warning">
+                                    <i class="fas fa-arrow-up"></i> 5%
+                                </span>
+                                <span class="text-muted">from last month</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card stats-card phishing">
+                        <div class="card-body">
+                            <h6 class="text-uppercase text-muted">Phishing Emails</h6>
+                            <h2 class="mb-0" id="phishingCount">0</h2>
+                            <div class="mt-2">
+                                <span class="text-danger">
+                                    <i class="fas fa-arrow-down"></i> 8%
+                                </span>
+                                <span class="text-muted">from last month</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Verdict Distribution</h5>
+                            <div class="chart-container">
+                                <canvas id="verdictChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Severity Distribution</h5>
+                            <div class="chart-container">
+                                <canvas id="severityChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Recent Activity Timeline</h5>
+                            <div class="timeline" id="activityTimeline">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div class="tab-content" id="settings-tab" style="display: none;">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">Settings</h2>
+                    
+                    <div class="mb-4">
+                        <h5>Analysis Preferences</h5>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="autoAnalyze" checked>
+                            <label class="form-check-label" for="autoAnalyze">
+                                Auto-analyze on paste
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="saveHistory" checked>
+                            <label class="form-check-label" for="saveHistory">
+                                Save analysis history
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>Notification Settings</h5>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="notifyPhishing" checked>
+                            <label class="form-check-label" for="notifyPhishing">
+                                Notify on phishing detection
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="notifySuspicious" checked>
+                            <label class="form-check-label" for="notifySuspicious">
+                                Notify on suspicious content
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>API Settings</h5>
+                        <div class="mb-3">
+                            <label for="apiKey" class="form-label">API Key</label>
+                            <input type="password" class="form-control" id="apiKey" placeholder="Enter your API key">
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary" id="saveSettings">
+                        <i class="fas fa-save"></i> Save Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="theme-toggle" id="themeToggle">
+        <i class="fas fa-moon"></i>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+        
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            const icon = themeToggle.querySelector('i');
+            icon.classList.toggle('fa-moon');
+            icon.classList.toggle('fa-sun');
+        });
+
+        // Tab Navigation
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const tab = e.target.closest('.nav-link').dataset.tab;
+                
+                // Update active tab
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                e.target.closest('.nav-link').classList.add('active');
+                
+                // Show selected tab content
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.style.display = 'none';
+                });
+                document.getElementById(`${tab}-tab`).style.display = 'block';
+                
+                // Update charts if on stats tab
+                if (tab === 'stats') {
+                    updateCharts();
+                }
+            });
+        });
+
+        // Quick Actions
+        document.getElementById('analyzeGmail').addEventListener('click', () => {
+            // Implement Gmail integration
+            alert('Gmail integration coming soon!');
+        });
+
+        document.getElementById('analyzeOutlook').addEventListener('click', () => {
+            // Implement Outlook integration
+            alert('Outlook integration coming soon!');
+        });
+
+        document.getElementById('analyzeClipboard').addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                document.getElementById('emailContent').value = text;
+            } catch (error) {
+                alert('Failed to read clipboard. Please paste manually.');
+            }
+        });
+
+        // Enhanced Analysis Form
+        document.getElementById('analysisForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const form = e.target;
+            const loading = document.querySelector('.loading');
+            const results = document.getElementById('results');
+            
+            loading.style.display = 'block';
+            results.style.display = 'none';
+            
+            try {
+                const formData = new FormData();
+                
+                if (document.getElementById('emailFile').files.length > 0) {
+                    formData.append('email', document.getElementById('emailFile').files[0]);
+                } else {
+                    formData.append('content', document.getElementById('emailContent').value);
+                }
+                
+                // Add all analysis options
+                formData.append('checkHeaders', document.getElementById('checkHeaders').checked);
+                formData.append('checkSPF', document.getElementById('checkSPF').checked);
+                formData.append('checkDKIM', document.getElementById('checkDKIM').checked);
+                formData.append('checkLinks', document.getElementById('checkLinks').checked);
+                formData.append('checkAttachments', document.getElementById('checkAttachments').checked);
+                formData.append('checkLanguage', document.getElementById('checkLanguage').checked);
+                formData.append('checkDomainAge', document.getElementById('checkDomainAge').checked);
+                formData.append('checkSSL', document.getElementById('checkSSL').checked);
+                formData.append('checkBlacklist', document.getElementById('checkBlacklist').checked);
+                
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Analysis failed');
+                }
+                
+                const result = await response.json();
+                displayEnhancedResults(result);
+                saveToHistory(result);
+                updateCharts();
+                updateTimeline();
+                
+            } catch (error) {
+                alert('Error analyzing email: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+
+        function displayEnhancedResults(result) {
+            const results = document.getElementById('results');
+            results.style.display = 'block';
+            
+            // Update verdict badge with default to 'unknown' if not provided
+            const verdictBadge = document.querySelector('.verdict-badge');
+            const verdict = result.verdict?.toLowerCase() || 'unknown';
+            verdictBadge.className = `summary-value verdict-badge ${verdict}`;
+            verdictBadge.textContent = result.verdict || 'Unknown';
+            
+            // Update threat level with default to 'low' if not provided
+            const threatLevel = document.querySelector('.threat-level');
+            const threatLevelValue = result.threatLevel?.toLowerCase() || 'low';
+            threatLevel.className = `threat-level ${threatLevelValue}`;
+            threatLevel.style.width = `${(result.threatScore || 0) * 100}%`;
+            
+            // Update score progress with default to 0 if not provided
+            const scoreProgress = document.querySelector('.score-progress');
+            scoreProgress.textContent = `${((result.score || 0) * 100).toFixed(1)}%`;
+            
+            // Update domain info with defaults
+            document.getElementById('domainAge').textContent = result.domainAge || 'Unknown';
+            document.getElementById('sslStatus').textContent = result.sslStatus || 'Unknown';
+            document.getElementById('blacklistStatus').textContent = result.blacklistStatus || 'Unknown';
+            
+            // Update email preview
+            const emailPreview = document.getElementById('emailPreview');
+            emailPreview.textContent = result.emailPreview || 'No preview available';
+            
+            // Update link analysis with empty array if not provided
+            const linkAnalysisResults = document.getElementById('linkAnalysisResults');
+            const links = result.links || [];
+            linkAnalysisResults.innerHTML = links.map(link => `
+                <div class="link-item ${(link.status || 'unknown').toLowerCase()}">
+                    <i class="fas ${link.status === 'safe' ? 'fa-check-circle' : 
+                                   link.status === 'suspicious' ? 'fa-exclamation-circle' : 
+                                   'fa-times-circle'}"></i>
+                    <div>
+                        <div>${link.url || 'Unknown URL'}</div>
+                        <small>${link.reason || 'No reason provided'}</small>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Update header analysis with empty array if not provided
+            const headerAnalysisResults = document.getElementById('headerAnalysisResults');
+            const headers = result.headers || [];
+            headerAnalysisResults.innerHTML = headers.map(header => `
+                <div class="header-item">
+                    <h6>${header.name || 'Unknown Header'}</h6>
+                    <pre>${header.value || 'No value'}</pre>
+                    ${header.status ? `<small class="text-${header.status === 'safe' ? 'success' : 
+                                             header.status === 'suspicious' ? 'warning' : 
+                                             'danger'}">${header.reason || 'No reason provided'}</small>` : ''}
+                </div>
+            `).join('');
+            
+            // Update attachment analysis with empty array if not provided
+            const attachmentAnalysisResults = document.getElementById('attachmentAnalysisResults');
+            const attachments = result.attachments || [];
+            attachmentAnalysisResults.innerHTML = attachments.map(attachment => `
+                <div class="attachment-item ${(attachment.status || 'unknown').toLowerCase()}">
+                    <i class="fas ${attachment.type === 'document' ? 'fa-file-alt' : 
+                                   attachment.type === 'image' ? 'fa-file-image' : 
+                                   attachment.type === 'archive' ? 'fa-file-archive' : 
+                                   'fa-file'}"></i>
+                    <div>
+                        <div>${attachment.name || 'Unknown Attachment'}</div>
+                        <small>${attachment.reason || 'No reason provided'}</small>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Update risk factors with empty array if not provided
+            const riskFactors = document.getElementById('riskFactors');
+            const factors = result.riskFactors || [];
+            riskFactors.innerHTML = factors.map(factor => `
+                <div class="risk-factor ${(factor.severity || 'low').toLowerCase()}">
+                    <i class="fas ${factor.severity === 'low' ? 'fa-info-circle' : 
+                                  factor.severity === 'medium' ? 'fa-exclamation-circle' : 
+                                  'fa-exclamation-triangle'}"></i>
+                    <div class="risk-factor-content">
+                        <div class="risk-factor-title">${factor.title || 'Unknown Risk'}</div>
+                        <div class="risk-factor-description">${factor.description || 'No description provided'}</div>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Update recommendations with empty array if not provided
+            const recommendations = document.getElementById('recommendations');
+            const recs = result.recommendations || [];
+            recommendations.innerHTML = recs.map(rec => `
+                <div class="recommendation-item">
+                    <h6>${rec.title || 'Unknown Recommendation'}</h6>
+                    <p>${rec.description || 'No description provided'}</p>
+                </div>
+            `).join('');
+        }
+
+        // History Management
+        function saveToHistory(result) {
+            const history = JSON.parse(localStorage.getItem('analysisHistory') || '[]');
+            history.unshift({
+                date: new Date().toISOString(),
+                verdict: result.verdict,
+                score: result.score,
+                findings: result.findings,
+                emailPreview: result.emailPreview
+            });
+            
+            // Keep only last 50 entries
+            if (history.length > 50) {
+                history.pop();
+            }
+            
+            localStorage.setItem('analysisHistory', JSON.stringify(history));
+            updateHistoryTable();
+        }
+
+        function updateHistoryTable() {
+            const history = JSON.parse(localStorage.getItem('analysisHistory') || '[]');
+            const tableBody = document.getElementById('historyTable');
+            
+            tableBody.innerHTML = history.map(entry => `
+                <tr>
+                    <td>${new Date(entry.date).toLocaleString()}</td>
+                    <td><span class="verdict-badge ${entry.verdict.toLowerCase()}">${entry.verdict}</span></td>
+                    <td>${(entry.score * 100).toFixed(1)}%</td>
+                    <td>${entry.findings.length}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary view-details" data-date="${entry.date}">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger delete-entry" data-date="${entry.date}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Add event listeners for view and delete buttons
+            document.querySelectorAll('.view-details').forEach(button => {
+                button.addEventListener('click', () => {
+                    const date = button.dataset.date;
+                    const entry = history.find(e => e.date === date);
+                    if (entry) {
+                        displayEnhancedResults(entry);
+                        document.querySelector('[data-tab="analyze"]').click();
+                    }
+                });
+            });
+
+            document.querySelectorAll('.delete-entry').forEach(button => {
+                button.addEventListener('click', () => {
+                    const date = button.dataset.date;
+                    const newHistory = history.filter(e => e.date !== date);
+                    localStorage.setItem('analysisHistory', JSON.stringify(newHistory));
+                    updateHistoryTable();
+                    updateCharts();
+                    updateTimeline();
+                });
+            });
+        }
+
+        // Search and Filter
+        document.getElementById('historySearch').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#historyTable tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+
+        document.querySelectorAll('.filter-buttons .btn').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.filter-buttons .btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                button.classList.add('active');
+                
+                const filter = button.dataset.filter;
+                const rows = document.querySelectorAll('#historyTable tr');
+                
+                rows.forEach(row => {
+                    if (filter === 'all') {
+                        row.style.display = '';
+                    } else {
+                        const verdict = row.querySelector('.verdict-badge').textContent.toLowerCase();
+                        row.style.display = verdict === filter ? '' : 'none';
+                    }
+                });
+            });
+        });
+
+        // Timeline
+        function updateTimeline() {
+            const history = JSON.parse(localStorage.getItem('analysisHistory') || '[]');
+            const timeline = document.getElementById('activityTimeline');
+            
+            timeline.innerHTML = history.slice(0, 5).map(entry => `
+                <div class="timeline-item ${entry.verdict.toLowerCase()}">
+                    <h6>${new Date(entry.date).toLocaleString()}</h6>
+                    <p>${entry.verdict} - ${(entry.score * 100).toFixed(1)}%</p>
+                    <small>${entry.findings.length} findings</small>
+                </div>
+            `).join('');
+        }
+
+        // Charts
+        let verdictChart, severityChart;
+
+        function updateCharts() {
+            const history = JSON.parse(localStorage.getItem('analysisHistory') || '[]');
+            
+            // Update counts
+            document.getElementById('safeCount').textContent = 
+                history.filter(h => h.verdict === 'Safe').length;
+            document.getElementById('suspiciousCount').textContent = 
+                history.filter(h => h.verdict === 'Suspicious').length;
+            document.getElementById('phishingCount').textContent = 
+                history.filter(h => h.verdict === 'Phishing').length;
+            
+            // Update verdict chart
+            if (verdictChart) {
+                verdictChart.destroy();
+            }
+            
+            const verdictCtx = document.getElementById('verdictChart').getContext('2d');
+            verdictChart = new Chart(verdictCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Safe', 'Suspicious', 'Phishing'],
+                    datasets: [{
+                        data: [
+                            history.filter(h => h.verdict === 'Safe').length,
+                            history.filter(h => h.verdict === 'Suspicious').length,
+                            history.filter(h => h.verdict === 'Phishing').length
+                        ],
+                        backgroundColor: [
+                            '#1cc88a',
+                            '#f6c23e',
+                            '#e74a3b'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            
+            // Update severity chart
+            if (severityChart) {
+                severityChart.destroy();
+            }
+            
+            const severityCtx = document.getElementById('severityChart').getContext('2d');
+            const severityData = {
+                high: 0,
+                medium: 0,
+                low: 0
+            };
+            
+            history.forEach(entry => {
+                entry.findings.forEach(finding => {
+                    severityData[finding.severity.toLowerCase()]++;
+                });
+            });
+            
+            severityChart = new Chart(severityCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['High', 'Medium', 'Low'],
+                    datasets: [{
+                        data: [severityData.high, severityData.medium, severityData.low],
+                        backgroundColor: [
+                            '#e74a3b',
+                            '#f6c23e',
+                            '#1cc88a'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Settings
+        document.getElementById('saveSettings').addEventListener('click', () => {
+            const settings = {
+                autoAnalyze: document.getElementById('autoAnalyze').checked,
+                saveHistory: document.getElementById('saveHistory').checked,
+                notifyPhishing: document.getElementById('notifyPhishing').checked,
+                notifySuspicious: document.getElementById('notifySuspicious').checked,
+                apiKey: document.getElementById('apiKey').value
+            };
+            
+            localStorage.setItem('settings', JSON.stringify(settings));
+            alert('Settings saved successfully!');
+        });
+
+        // Load saved settings
+        const savedSettings = JSON.parse(localStorage.getItem('settings') || '{}');
+        if (savedSettings) {
+            document.getElementById('autoAnalyze').checked = savedSettings.autoAnalyze !== false;
+            document.getElementById('saveHistory').checked = savedSettings.saveHistory !== false;
+            document.getElementById('notifyPhishing').checked = savedSettings.notifyPhishing !== false;
+            document.getElementById('notifySuspicious').checked = savedSettings.notifySuspicious !== false;
+            document.getElementById('apiKey').value = savedSettings.apiKey || '';
+        }
+
+        // Initialize
+        updateHistoryTable();
+        updateCharts();
+        updateTimeline();
+    </script>
+</body>
+</html> 
