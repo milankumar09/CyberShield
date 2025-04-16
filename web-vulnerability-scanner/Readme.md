@@ -1,0 +1,106 @@
+# Web Vulnerability Scanner
+
+A Flask-based web application to scan and identify common security vulnerabilities in web applications. This tool uses various techniques to check for issues like insecure SSL certificates, missing security headers, XSS vulnerabilities, SQL injection, open ports, and information disclosure.
+
+## Features
+
+- **SSL Certificate Validation**: Checks if the SSL certificate is valid and properly configured.
+- **Security Headers Check**: Detects missing HTTP security headers that could expose the application to vulnerabilities.
+- **XSS Detection**: Identifies potential Reflected XSS vulnerabilities.
+- **SQL Injection Testing**: Looks for signs of SQL injection vulnerabilities in query parameters.
+- **Port Scanning**: Checks for open ports on the target server.
+- **Sensitive Information Disclosure**: Searches for common sensitive files or directories exposed on the server.
+
+## Prerequisites
+
+- Python 3.6+
+- Flask
+- Requests
+- BeautifulSoup (bs4)
+
+## Installation
+
+1. Clone the repository:
+    ```bash
+    git clone https://github.com/yourusername/web-vulnerability-scanner.git
+    cd web-vulnerability-scanner
+    ```
+
+2. Install the required Python packages:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+3. Run the application:
+    ```bash
+    python app.py
+    ```
+
+4. Open your browser and visit:
+    ```
+    http://127.0.0.1:5000/
+    ```
+
+## Usage
+
+1. Enter the URL of the web application you want to scan in the text input box.
+2. Click the **Scan** button to initiate the scan.
+3. The results will display a list of detected vulnerabilities or a message indicating no vulnerabilities were found.
+
+## Code Structure
+
+- **`app.py`**: The main file containing the Flask app and `SecurityScanner` class.
+    - `SecurityScanner`: Implements various scanning techniques.
+    - `index`: Defines the Flask route to render the UI and handle user input.
+
+## Scanning Techniques
+
+### SSL Certificate Validation
+Checks the SSL certificate for validity and warns if it’s invalid or misconfigured.
+
+### Security Headers Check
+Identifies missing HTTP headers, including:
+- `Strict-Transport-Security`
+- `X-Content-Type-Options`
+- `X-Frame-Options`
+- `Content-Security-Policy`
+- `X-XSS-Protection`
+- `Referrer-Policy`
+- `Permissions-Policy`
+
+### XSS Vulnerability Detection
+Tests for Reflected XSS vulnerabilities by injecting payloads into query parameters.
+
+### SQL Injection Testing
+Checks for SQL injection by injecting common SQL patterns and searching for database error messages in responses.
+
+### Port Scanning
+Scans for open ports on the target server using a list of common ports.
+
+### Sensitive Information Disclosure
+Detects exposed sensitive files and directories, such as:
+- `/robots.txt`
+- `/.git/config`
+- `/wp-config.php`
+
+## Known Limitations
+
+- False positives may occur due to varying application behavior.
+- The scanner only supports HTTP and HTTPS URLs.
+- Port scanning may be incomplete if the server limits requests.
+
+## Future Enhancements
+
+- Add support for custom payloads and port ranges.
+- Include more detailed scanning reports.
+- Support for authenticated scans.
+
+
+
+## Disclaimer
+
+This tool is for educational and ethical purposes only. Do not use it without proper authorization. The author is not responsible for any misuse of this tool.
+
+---
+
+**Happy Scanning!**
